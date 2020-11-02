@@ -47,6 +47,10 @@ struct Gosund
   int32_t desiredBrightnessPercent = 0;
   uint32_t state_lockout = 0;
   bool lockout = false;
+
+  /* Version info */
+  uint8_t majorVersion = 1;
+  uint8_t minorVersion = 0;
 } Gosund;
 
 
@@ -121,6 +125,7 @@ void GosundSynchronize(void) {
 
 void GosundInit(void)
 {
+  AddLog_P2(LOG_LEVEL_INFO, PSTR("GS: Initializing Gosund Dimmer SW2 (v%u.%u)"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, Gosund.majorVersion, Gosund.minorVersion);
   Gosund.buffer = (uint8_t *)malloc(GOSUND_BUFFER_SIZE);
   if (Gosund.buffer != nullptr){
     Gosund.serial = new TasmotaSerial(Pin(GPIO_RXD), Pin(GPIO_TXD), 2);
