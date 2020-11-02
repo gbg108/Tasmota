@@ -125,7 +125,7 @@ void GosundSynchronize(void) {
 
 void GosundInit(void)
 {
-  AddLog_P2(LOG_LEVEL_INFO, PSTR("GS: Initializing Gosund Dimmer SW2 (v%u.%u)"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, Gosund.majorVersion, Gosund.minorVersion);
+  AddLog_P2(LOG_LEVEL_INFO, PSTR("GS: Initializing Gosund Dimmer SW2 (v%u.%u)"),  Gosund.majorVersion, Gosund.minorVersion);
   Gosund.buffer = (uint8_t *)malloc(GOSUND_BUFFER_SIZE);
   if (Gosund.buffer != nullptr){
     Gosund.serial = new TasmotaSerial(Pin(GPIO_RXD), Pin(GPIO_TXD), 2);
