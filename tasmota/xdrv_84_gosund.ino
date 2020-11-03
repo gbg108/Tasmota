@@ -81,11 +81,12 @@ void GosundSerialInput(void) {
     yield();
     uint8_t serial_in_byte = Gosund.serial->read();
     if (Gosund.syncWord && Gosund.serialStream == Gosund.syncWord) {
+      char scmnd[32];
       Gosund.desiredBrightnessPercent = serial_in_byte;
-      Gosund.desiredPower=(Gosund.desiredBrightnessPercent != 0); /* If we've dimmed to 0, turn off the lights */
-      LightSetDimmer(serial_in_byte);
+      snprintf_P(scmnd, sizeof(scmnd), PSTR(D_CMND_DIMMER " %d"), serial_in_byte);
+      ExecuteCommand(scmnd, SRC_SWITCH);
       Gosund.serialStream=0;
-      AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Sync word match. Read new brightness from switch"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, serial_in_byte);
+      AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Sync word match. Setting brightness %u from touch panel"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, serial_in_byte);
     }
     else if (((Gosund.serialStream >> 24) == 0x01) && (Gosund.syncWord != Gosund.serialStream)) {
       AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Switching to syncword 0x%08x"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, Gosund.syncWord);
@@ -104,9 +105,16 @@ void GosundSynchronize(void) {
   /* If either our power state or brightness state are not the same, synchronize */
   if ((Gosund.currentPower != Gosund.desiredPower) ||
       (Gosund.desiredPower && (Gosund.currentBrightnessPercent != Gosund.desiredBrightnessPercent))) {
-    /* Convert our bightness value from a scale 0-100 to a scale rangeLow - rangeHigh */
-    uint8_t brightValue = Gosund.desiredPower ? Gosund.desiredBrightnessPercent : 0;
-    brightValue = changeUIntScale(brightValue, 0, 100, Gosund.rangeLow, Gosund.rangeHigh);
+    uint8_t brightValue;
+
+    if (Gosund.desiredPower) {
+      /* If power is on, convert the desired brighness percent to a scale from rangeLow to rangeHigh */
+      brightValue = changeUIntScale(Gosund.desiredBrightnessPercent, 0, 100, Gosund.rangeLow, Gosund.rangeHigh);
+    }
+    else {
+      /* If power is off, convert the current brighness percent on the same scale as if power was on, however we need to reduce by rangeLow. */
+      brightValue = changeUIntScale(Gosund.currentBrightnessPercent, 0, 100, 0, Gosund.rangeHigh - Gosund.rangeLow);
+    }
 
     /* Inform the switch of the new brightness value */
     Gosund.serial->write(brightValue);
@@ -183,8 +191,8 @@ bool Xdrv84(uint8_t function) {
     switch (function) {
     case FUNC_LOOP:
       if (Gosund.serial) {
-        GosundSerialInput();
         GosundSynchronize();
+        GosundSerialInput();
       }
       break;
     case FUNC_INIT:
