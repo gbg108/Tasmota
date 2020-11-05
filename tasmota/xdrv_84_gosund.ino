@@ -104,6 +104,7 @@ void GosundSerialInput(void) {
     /* We've read a new brighness percentage from the touch panel. */
     char scmnd[32];
     Gosund.desiredBrightnessPercent = newBrightness;
+    Gosund.currentBrightnessPercent = newBrightness; /* The switch will have already adjusted the brightness. Setting it here keeps the dimming smooth when using the touch pad */
     snprintf_P(scmnd, sizeof(scmnd), PSTR(D_CMND_DIMMER " %d"), newBrightness);
     ExecuteCommand(scmnd, SRC_SWITCH);
     AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Sending brightness %u from touch panel"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, newBrightness);
