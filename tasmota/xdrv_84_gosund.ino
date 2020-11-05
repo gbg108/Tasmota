@@ -112,24 +112,30 @@ void GosundSerialInput(void) {
 }
 
 void GosundSynchronize(void) {
+  bool syncNeeded = false;
   /* If still locked out, return */
   if (GosundCheckLockout()) return;
+
+  syncNeeded |= (Gosund.currentPower != Gosund.desiredPower); /* sync if the power state has changed */
+  syncNeeded |= (Gosund.desiredPower && (Gosund.currentBrightnessPercent != Gosund.desiredBrightnessPercent)); /* sync if the power is on and the brightness has changed */
 
   /* Ensure our brightness is above the hw minimum. Adjusting this way will cause falshing when using the touch pad since the brightness has already be adjusted by the switch */
   if (Gosund.desiredBrightnessPercent < Settings.dimmer_hw_min) {
     Gosund.desiredBrightnessPercent = Settings.dimmer_hw_min;
+    syncNeeded=true;
     AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Reset desired brightness %u to hw minimum %u"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, Gosund.desiredBrightnessPercent, Settings.dimmer_hw_min);
   }
 
   /* Ensure our brightness is above the hw maximum. Adjusting this way will cause falshing when using the touch pad since the brightness has already be adjusted by the switch */
   if (Gosund.desiredBrightnessPercent > Settings.dimmer_hw_max) {
     Gosund.desiredBrightnessPercent = Settings.dimmer_hw_max;
+    syncNeeded=true;
     AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Reset desired brightness %u to hw maximun %u"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, Gosund.desiredBrightnessPercent, Settings.dimmer_hw_max);
   }
 
   /* If either our power state or brightness state are not the same, synchronize */
-  if ((Gosund.currentPower != Gosund.desiredPower) ||
-      (Gosund.desiredPower && (Gosund.currentBrightnessPercent != Gosund.desiredBrightnessPercent))) {
+  if (syncNeeded) {
+    char scmnd[32];
     uint8_t brightValue;
 
     if (Gosund.desiredPower) {
@@ -150,6 +156,12 @@ void GosundSynchronize(void) {
 
     Gosund.currentBrightnessPercent = Gosund.desiredBrightnessPercent;
     Gosund.currentPower = Gosund.desiredPower;
+
+    if (Gosund.currentPower) {
+      /* IF the power is on send the current brightness to ensure everything is up to date */
+      snprintf_P(scmnd, sizeof(scmnd), PSTR(D_CMND_DIMMER " %d"), Gosund.currentBrightnessPercent);
+      ExecuteCommand(scmnd, SRC_SWITCH);
+    }
 
     digitalWrite(Gosund.powerLedPin, Gosund.currentPower ? LOW : HIGH);
     AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Changed brightness with value: 0x%02x"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, brightValue);
@@ -184,7 +196,7 @@ void GosundInit(void)
 bool GosundSetPower(void) {
   Gosund.desiredPower = XdrvMailbox.index;
   AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Setpower"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent);
-  return false;
+  return true;
 }
 
 bool GosundSetBrightness(void) {
@@ -193,7 +205,7 @@ bool GosundSetBrightness(void) {
   /* If we've dimmed to 0, turn off the lights */
   Gosund.desiredPower=(Gosund.desiredBrightnessPercent != 0);
   AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] SetBrightness"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent);
-  return false;
+  return true;
 }
 
 bool GosundButtonPressed(void) {
