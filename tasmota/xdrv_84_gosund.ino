@@ -114,6 +114,18 @@ void GosundSynchronize(void) {
   /* If still locked out, return */
   if (GosundCheckLockout()) return;
 
+  /* Ensure our brightness is above the hw minimum. Adjusting this way will cause falshing when using the touch pad since the brightness has already be adjusted by the switch */
+  if (Gosund.desiredBrightnessPercent < Settings.dimmer_hw_min) {
+    Gosund.desiredBrightnessPercent = Settings.dimmer_hw_min;
+    AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Reset desired brightness %u to hw minimum %u"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, Gosund.desiredBrightnessPercent, Settings.dimmer_hw_min);
+  }
+
+  /* Ensure our brightness is above the hw maximum. Adjusting this way will cause falshing when using the touch pad since the brightness has already be adjusted by the switch */
+  if (Gosund.desiredBrightnessPercent > Settings.dimmer_hw_max) {
+    Gosund.desiredBrightnessPercent = Settings.dimmer_hw_max;
+    AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Reset desired brightness %u to hw maximun %u"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, Gosund.desiredBrightnessPercent, Settings.dimmer_hw_max);
+  }
+
   /* If either our power state or brightness state are not the same, synchronize */
   if ((Gosund.currentPower != Gosund.desiredPower) ||
       (Gosund.desiredPower && (Gosund.currentBrightnessPercent != Gosund.desiredBrightnessPercent))) {
