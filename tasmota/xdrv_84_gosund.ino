@@ -50,7 +50,7 @@ struct Gosund
 
   /* Version info */
   uint8_t majorVersion = 1;
-  uint8_t minorVersion = 1;
+  uint8_t minorVersion = 2;
 } Gosund;
 
 
