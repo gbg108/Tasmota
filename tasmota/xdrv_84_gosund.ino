@@ -77,16 +77,19 @@ bool GosundCheckLockout() {
 }
 
 void GosundSerialInput(void) {
+  int32_t newBrightness = -1;
   while (Gosund.serial->available()) {
     yield();
     uint8_t serial_in_byte = Gosund.serial->read();
     if (Gosund.syncWord && Gosund.serialStream == Gosund.syncWord) {
-      char scmnd[32];
-      Gosund.desiredBrightnessPercent = serial_in_byte;
-      snprintf_P(scmnd, sizeof(scmnd), PSTR(D_CMND_DIMMER " %d"), serial_in_byte);
-      ExecuteCommand(scmnd, SRC_SWITCH);
+      newBrightness = serial_in_byte;
+
+      /* If the brightness level is 0, set it to 1. We don't want the light to turn off because we dimmed on the touch panel */
+      if (newBrightness == 0)
+        newBrightness = 1;
+
+      AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Sync word match. Read brightness %u from touch panel"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, newBrightness);
       Gosund.serialStream=0;
-      AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Sync word match. Setting brightness %u from touch panel"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, serial_in_byte);
     }
     else if (((Gosund.serialStream >> 24) == 0x01) && (Gosund.syncWord != Gosund.serialStream)) {
       AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Switching to syncword 0x%08x"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, Gosund.syncWord);
@@ -95,6 +98,15 @@ void GosundSerialInput(void) {
     else {
       Gosund.serialStream = ((Gosund.serialStream << 8) & 0xFFFFFF00) | serial_in_byte;
     }
+  }
+
+  if (newBrightness >= 0) {
+    /* We've read a new brighness percentage from the touch panel. */
+    char scmnd[32];
+    Gosund.desiredBrightnessPercent = newBrightness;
+    snprintf_P(scmnd, sizeof(scmnd), PSTR(D_CMND_DIMMER " %d"), newBrightness);
+    ExecuteCommand(scmnd, SRC_SWITCH);
+    AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Sending brightness %u from touch panel"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, newBrightness);
   }
 }
 
