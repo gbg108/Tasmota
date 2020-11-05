@@ -668,7 +668,9 @@ void ResponseAppendFeatures(void)
 #ifdef USE_RC522
     feature7 |= 0x00002000;  // xsns_80_mfrc522.ino
 #endif
-//    feature7 |= 0x00004000;
+#if defined(USE_LIGHT) && defined(USE_GOSUND_DIMMER)
+    feature7 |= 0x00004000;  // xdrv_84_gosund.ino
+#endif
 //    feature7 |= 0x00008000;
 
 //    feature7 |= 0x00010000;
