@@ -113,11 +113,19 @@ void GosundSerialInput(void) {
 
 void GosundSynchronize(void) {
   bool syncNeeded = false;
+  uint32_t stepDiff = 0;
+  uint32_t stepBrightness = 0;
   /* If still locked out, return */
   if (GosundCheckLockout()) return;
 
-  syncNeeded |= (Gosund.currentPower != Gosund.desiredPower); /* sync if the power state has changed */
-  syncNeeded |= (Gosund.desiredPower && (Gosund.currentBrightnessPercent != Gosund.desiredBrightnessPercent)); /* sync if the power is on and the brightness has changed */
+  /* 1 is a special lowest case. We don't want to check this value and round to 0 and turn the lights off */
+  if (Gosund.desiredBrightnessPercent > 1 && (stepDiff = Gosund.desiredBrightnessPercent % Settings.dimmer_step) != 0) {
+    stepBrightness = Gosund.desiredBrightnessPercent / Settings.dimmer_step * Settings.dimmer_step;
+    if (stepDiff >= Settings.dimmer_step/2) stepBrightness += Settings.dimmer_step;
+    AddLog_P(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Reset desired brightness %u to step level %u"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, Gosund.desiredBrightnessPercent, stepBrightness);
+    Gosund.desiredBrightnessPercent = stepBrightness;
+    syncNeeded=true;
+  }
 
   /* Ensure our brightness is above the hw minimum. Adjusting this way will cause falshing when using the touch pad since the brightness has already be adjusted by the switch */
   if (Gosund.desiredBrightnessPercent < Settings.dimmer_hw_min) {
@@ -132,6 +140,16 @@ void GosundSynchronize(void) {
     syncNeeded=true;
     AddLog_P(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Reset desired brightness %u to hw maximun %u"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, Gosund.desiredBrightnessPercent, Settings.dimmer_hw_max);
   }
+
+  /* Ensure our brightness is above the hw minimum. Adjusting this way will cause falshing when using the touch pad since the brightness has already be adjusted by the switch */
+  if (Gosund.desiredBrightnessPercent < 1) {
+    Gosund.desiredBrightnessPercent = 1;
+    AddLog_P(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Reset desired brightness %u to be at least 1"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, Gosund.desiredBrightnessPercent);
+    syncNeeded=true;
+  }
+
+  syncNeeded |= (Gosund.currentPower != Gosund.desiredPower); /* sync if the power state has changed */
+  syncNeeded |= (Gosund.desiredPower && (Gosund.currentBrightnessPercent != Gosund.desiredBrightnessPercent)); /* sync if the power is on and the brightness has changed */
 
   /* If either our power state or brightness state are not the same, synchronize */
   if (syncNeeded) {
