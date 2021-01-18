@@ -60,7 +60,7 @@ void GosundSetLockout(bool showLed, uint32_t delayMs) {
     digitalWrite(Gosund.lockLedPin, LOW);
   }
   SetNextTimeInterval(Gosund.state_lockout, delayMs);
-  AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Set lockout %ums"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, delayMs);
+  AddLog_P(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Set lockout %ums"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, delayMs);
   Gosund.lockout=true;
 }
 
@@ -88,11 +88,11 @@ void GosundSerialInput(void) {
       if (newBrightness == 0)
         newBrightness = 1;
 
-      AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Sync word match. Read brightness %u from touch panel"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, newBrightness);
+      AddLog_P(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Sync word match. Read brightness %u from touch panel"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, newBrightness);
       Gosund.serialStream=0;
     }
     else if (((Gosund.serialStream >> 24) == 0x01) && (Gosund.syncWord != Gosund.serialStream)) {
-      AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Switching to syncword 0x%08x"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, Gosund.syncWord);
+      AddLog_P(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Switching to syncword 0x%08x"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, Gosund.syncWord);
       Gosund.syncWord = Gosund.serialStream;
     }
     else {
@@ -107,7 +107,7 @@ void GosundSerialInput(void) {
     Gosund.currentBrightnessPercent = newBrightness; /* The switch will have already adjusted the brightness. Setting it here keeps the dimming smooth when using the touch pad */
     snprintf_P(scmnd, sizeof(scmnd), PSTR(D_CMND_DIMMER " %d"), newBrightness);
     ExecuteCommand(scmnd, SRC_SWITCH);
-    AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Sending brightness %u from touch panel"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, newBrightness);
+    AddLog_P(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Sending brightness %u from touch panel"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, newBrightness);
   }
 }
 
@@ -123,14 +123,14 @@ void GosundSynchronize(void) {
   if (Gosund.desiredBrightnessPercent < Settings.dimmer_hw_min) {
     Gosund.desiredBrightnessPercent = Settings.dimmer_hw_min;
     syncNeeded=true;
-    AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Reset desired brightness %u to hw minimum %u"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, Gosund.desiredBrightnessPercent, Settings.dimmer_hw_min);
+    AddLog_P(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Reset desired brightness %u to hw minimum %u"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, Gosund.desiredBrightnessPercent, Settings.dimmer_hw_min);
   }
 
   /* Ensure our brightness is above the hw maximum. Adjusting this way will cause falshing when using the touch pad since the brightness has already be adjusted by the switch */
   if (Gosund.desiredBrightnessPercent > Settings.dimmer_hw_max) {
     Gosund.desiredBrightnessPercent = Settings.dimmer_hw_max;
     syncNeeded=true;
-    AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Reset desired brightness %u to hw maximun %u"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, Gosund.desiredBrightnessPercent, Settings.dimmer_hw_max);
+    AddLog_P(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Reset desired brightness %u to hw maximun %u"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, Gosund.desiredBrightnessPercent, Settings.dimmer_hw_max);
   }
 
   /* If either our power state or brightness state are not the same, synchronize */
@@ -164,13 +164,13 @@ void GosundSynchronize(void) {
     }
 
     digitalWrite(Gosund.powerLedPin, Gosund.currentPower ? LOW : HIGH);
-    AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Changed brightness with value: 0x%02x"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, brightValue);
+    AddLog_P(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Changed brightness with value: 0x%02x"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent, brightValue);
   }
 }
 
 void GosundInit(void)
 {
-  AddLog_P2(LOG_LEVEL_INFO, PSTR("GS: Initializing Gosund Dimmer SW2 (v%u.%u)"),  Gosund.majorVersion, Gosund.minorVersion);
+  AddLog_P(LOG_LEVEL_INFO, PSTR("GS: Initializing Gosund Dimmer SW2 (v%u.%u)"),  Gosund.majorVersion, Gosund.minorVersion);
   Gosund.buffer = (uint8_t *)malloc(GOSUND_BUFFER_SIZE);
   if (Gosund.buffer != nullptr){
     Gosund.serial = new TasmotaSerial(Pin(GPIO_RXD), Pin(GPIO_TXD), 2);
@@ -190,12 +190,12 @@ void GosundInit(void)
 
   /* Lock out communication with the switch for 2 seocnds to let it come online  */
   GosundSetLockout(true, 2000);
-  AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Initialized"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent);
+  AddLog_P(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Initialized"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent);
 }
 
 bool GosundSetPower(void) {
   Gosund.desiredPower = XdrvMailbox.index;
-  AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Setpower"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent);
+  AddLog_P(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] Setpower"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent);
   return true;
 }
 
@@ -204,13 +204,13 @@ bool GosundSetBrightness(void) {
 
   /* If we've dimmed to 0, turn off the lights */
   Gosund.desiredPower=(Gosund.desiredBrightnessPercent != 0);
-  AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] SetBrightness"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent);
+  AddLog_P(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] SetBrightness"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent);
   return true;
 }
 
 bool GosundButtonPressed(void) {
   if (!XdrvMailbox.index && ((PRESSED == XdrvMailbox.payload) && (NOT_PRESSED == Button.last_state[XdrvMailbox.index]))) {
-    AddLog_P2(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] ButtonPressed"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent);
+    AddLog_P(LOG_LEVEL_DEBUG, PSTR("GS: [CP:%d DP:%u CB:%d DB:%u] ButtonPressed"),  Gosund.currentPower, Gosund.desiredPower, Gosund.currentBrightnessPercent, Gosund.desiredBrightnessPercent);
     ExecuteCommandPower(1, POWER_TOGGLE, SRC_LIGHT);
     return true;
   }
